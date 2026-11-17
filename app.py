@@ -28,6 +28,12 @@ def load() -> pd.DataFrame:
     return pd.read_csv(DATA)
 
 
+@st.cache_data
+def load_intake() -> pd.DataFrame:
+    """צריכה יומית ממוצעת מתוספים, לכל נבדק, ל-16 חומרים (נבנה ע"י scripts/build_supplement_tables.py)."""
+    return pd.read_csv(DATA.parent / "supplement_intake_by_person.csv")
+
+
 df = load()
 
 # ---------------------------------------------------------------- סינון (sidebar)
@@ -143,6 +149,33 @@ if not tdf.empty:
     st.altair_chart(tch, width="stretch")
 st.caption("קריאטין ואבקת חלבון לא מוצגים: יש בנתונים רק 11 ו-16 נבדקים כאלה. נוטלי מוצרים עם ויטמין D "
            "(למשל מולטי-ויטמין) מקבלים ויטמין D גם ממנו, ולכן הגרף מראה קשר ולא סיבתיות.")
+
+# ---------------------------------------------------------------- תוספים נפוצים
+st.subheader("אילו תוספים אנשים נוטלים")
+NAMES = {"vitd": ("ויטמין D", "מק\"ג"), "calcium": ("סידן", "מ\"ג"), "vitc": ("ויטמין C", "מ\"ג"), "b12": ("ויטמין B12", "מק\"ג"),
+         "b6": ("ויטמין B6", "מ\"ג"), "folic_acid": ("חומצה פולית", "מק\"ג"), "niacin": ("ניאצין (B3)", "מ\"ג"),
+         "zinc": ("אבץ", "מ\"ג"), "b2": ("ויטמין B2", "מ\"ג"), "b1": ("ויטמין B1", "מ\"ג"), "magnesium": ("מגנזיום", "מ\"ג"),
+         "copper": ("נחושת", "מ\"ג"), "iodine": ("יוד", "מק\"ג"), "selenium": ("סלניום", "מק\"ג"), "vitk": ("ויטמין K", "מק\"ג"),
+         "iron": ("ברזל", "מ\"ג")}
+intake = load_intake()
+intake = intake[intake.seqn.isin(f.seqn)]
+prev_rows = []
+for key, (he, unit) in NAMES.items():
+    d = intake[f"dose_{key}"]
+    users = d[d > 0]
+    prev_rows.append({"חומר": he, "% נוטלים": 100 * len(users) / len(intake), "נוטלים": len(users),
+                      "מינון יומי חציוני (בקרב נוטלים)": f"{users.median():.1f} {unit}" if len(users) else "-"})
+prev_df = pd.DataFrame(prev_rows).sort_values("% נוטלים", ascending=False)
+pch = (alt.Chart(prev_df).mark_bar(color="#2f6f8f")
+       .encode(y=alt.Y("חומר:N", sort="-x", title="", axis=alt.Axis(orient="right", labelLimit=220, labelPadding=8)),
+               x=alt.X("% נוטלים:Q", title="% מהנבדקים שנטלו את החומר ב-30 הימים האחרונים"),
+               tooltip=["חומר", alt.Tooltip("% נוטלים:Q", format=".1f"), "נוטלים", "מינון יומי חציוני (בקרב נוטלים)"])
+       .properties(height=460))
+st.altair_chart(pch, width="stretch")
+st.caption("הכוונה היא לצריכה מתוספים בלבד (לא מהמזון). מולטי-ויטמין תורם לרוב החומרים כאן, לכן האחוזים של ויטמינים רבים דומים. "
+           "קריאטין ואבקת חלבון לא מופיעים כי יש מעט מדי נבדקים. מקור: DSQTOT_J (NHANES).")
+with st.expander("טבלת מינונים"):
+    st.dataframe(prev_df.assign(**{"% נוטלים": prev_df["% נוטלים"].round(1)}), width="stretch", hide_index=True)
 
 # ---------------------------------------------------------------- טבלה
 st.subheader("דוגמה מהנתונים הנקיים")
