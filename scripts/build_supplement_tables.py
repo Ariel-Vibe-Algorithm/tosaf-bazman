@@ -1,4 +1,4 @@
-"""בונה טבלאות על תוספים נפוצים מתוך NHANES 2017-2018, לאותם 5,068 מבוגרים שבקובץ הנקי.
+"""בונה טבלאות על תוספים נפוצים מתוך NHANES (2017-2018 ו-2021-2023), לאותם מבוגרים שבקובץ הנקי.
 הרצה: python scripts/build_supplement_tables.py  (אחרי clean_data.py)
 פלט: data/supplement_intake_by_person.csv  ו-  data/supplement_prevalence.csv
 """
@@ -29,8 +29,10 @@ NUTRIENTS = {
 }
 
 clean = pd.read_csv(DATA / "nhanes_supplements_vitd_clean.csv", usecols=["seqn"])
-tot = pd.read_sas(RAW / "DSQTOT_J.xpt", format="xport", encoding=None)
+tot = pd.concat([pd.read_sas(RAW / f"DSQTOT_{s}.xpt", format="xport", encoding=None) for s in ("J", "L")],
+                ignore_index=True)
 tot["seqn"] = tot.SEQN.astype(int)
+assert not tot.seqn.duplicated().any()
 tot = clean.merge(tot, on="seqn", how="left")
 assert len(tot) == len(clean) and tot.DSQTVD.notna().sum() > 0
 

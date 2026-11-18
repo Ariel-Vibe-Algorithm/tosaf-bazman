@@ -55,7 +55,7 @@ people, rules, research = load_people(), load_rules(), load_research()
 st.title("תוסף בזמן: תזמון, מינון ורמות בדם")
 st.caption(
     f"{len(rules)} תוספים · {len(research):,} עובדות ממחקרים ומסמכים רשמיים, כל אחת עם מקור · "
-    f"{len(people):,} מבוגרים עם בדיקות דם (NHANES 2017–2018). כלי לימודי, לא ייעוץ רפואי."
+    f"{len(people):,} מבוגרים עם בדיקות דם (NHANES, שני סבבים: 2017–2018 ו-2021–2023). כלי לימודי, לא ייעוץ רפואי."
 )
 
 none_d = people[people.supp_vitd_mcg == 0].vitd_low.mean() * 100
@@ -221,6 +221,10 @@ if view.startswith("תזמון"):
 else:
     with st.sidebar:
         st.header("סינון")
+        cycles = sorted(people.cycle.unique())
+        chosen_cycles = st.pills("סבב הסקר", cycles, selection_mode="multi", default=cycles,
+                                 help="2017–2018 ו-2021–2023. בסבב החדש ה-CDC לא דגם יותר אנשים מקבוצות מוצא מסוימות, "
+                                      "כמו שעשה בסבב הקודם, ולכן ההרכב שונה. ההבדל בין הסבבים הוא קשר ולא בהכרח שינוי אמיתי.")
         age_lo, age_hi = st.slider("טווח גילאים", int(people.age_years.min()), int(people.age_years.max()),
                                    (int(people.age_years.min()), int(people.age_years.max())))
         sex_map = {"female": "נשים", "male": "גברים"}
@@ -232,7 +236,7 @@ else:
                            format_func=season_map.get)
         st.caption("הפילטרים משנים את כל המדדים, הגרפים והטבלה בתצוגה הזו.")
 
-    f = people[people.age_years.between(age_lo, age_hi) & people.sex.isin(sexes)
+    f = people[people.cycle.isin(chosen_cycles) & people.age_years.between(age_lo, age_hi) & people.sex.isin(sexes)
                & people.race_ethnicity.isin(chosen_races) & people.exam_season.isin(seasons)]
     if len(f) < 30:
         st.warning("הסינון השאיר פחות מ-30 נבדקים, ולכן אי אפשר להציג תוצאות. הרחיבי את הסינון בצד.")
@@ -264,6 +268,13 @@ else:
                       delta=f"{low.mean() * 100 - overall:+.1f} נק' מכלל הנבדקים", delta_color="inverse")
             st.metric("לוקחים תוסף ויטמין D", f"{(f.supp_vitd_mcg > 0).mean() * 100:.1f}%", border=True)
     else:
+        # פריטין נמדד רק אצל חלק מהנבדקים (ב-2021–2023 רק לנשים בגילאי 18–49), ולכן ניתוחי הברזל רק עליהם
+        f = f[f.iron_low.notna()]
+        if len(f) < 30:
+            st.warning("בסינון הזה יש פחות מ-30 נבדקים שנמדד להם פריטין. הרחיבי את הסינון בצד.")
+            st.stop()
+        st.caption(f"ניתוחי הברזל כוללים רק את {len(f):,} הנבדקים שנמדד להם פריטין. ב-2021–2023 ה-CDC מדד פריטין "
+                   "רק לנשים בגילאי 18–49, ולכן גברים ונשים מבוגרות מגיעים רק מ-2017–2018.")
         female, male = f[f.sex == "female"], f[f.sex == "male"]
         f = f.assign(age_group=pd.cut(f.age_years, [17, 30, 50, 80], labels=["18–30", "31–50", "51–80"]))
         if len(female) >= 30 and len(male) >= 30 and male.iron_low.mean() > 0:
@@ -323,6 +334,21 @@ else:
                       .properties(height=320))
                 st.altair_chart(sc, alt="בחורף יותר נבדקים ברמת ויטמין D נמוכה מאשר בקיץ")
                 st.caption("בישראל החורף שמשי יותר, ולכן כדאי להשוות לעובדות הישראליות שבחלק 'מה ידוע על ישראל'.")
+        with st.container(border=True):
+            st.markdown("**השוואה בין סבבי הסקר: 2017–2018 מול 2021–2023**")
+            cyc = (f.groupby("cycle")
+                   .agg(**{"% עם רמה נמוכה": ("vitd_low", "mean"),
+                           "% לוקחים תוסף ויטמין D": ("supp_vitd_mcg", lambda s: (s > 0).mean())})
+                   .mul(100).reset_index().melt("cycle", var_name="מדד", value_name="אחוז"))
+            cc = (alt.Chart(cyc).mark_bar()
+                  .encode(x=alt.X("מדד:N", title="", axis=alt.Axis(labelAngle=0)), xOffset="cycle:N",
+                          y=alt.Y("אחוז:Q", title="% מהנבדקים"),
+                          color=alt.Color("cycle:N", title="סבב", scale=alt.Scale(range=[GREY, BLUE])),
+                          tooltip=["cycle", "מדד", alt.Tooltip("אחוז:Q", format=".1f")])
+                  .properties(height=300))
+            st.altair_chart(cc, alt="בסבב 2021–2023 יותר נבדקים לוקחים תוסף ויטמין D, ופחות נמצאים ברמה נמוכה")
+            st.caption("זה קשר ולא סיבתיות. בנוסף, ההרכב של המדגם שונה בין הסבבים: ב-2021–2023 ה-CDC לא דגם יותר "
+                       "אנשים מקבוצות מוצא מסוימות, כמו בסבב הקודם. כדי להשוות בהגינות, סנני בצד לקבוצת מוצא אחת.")
     else:
         with g1:
             with st.container(border=True):
