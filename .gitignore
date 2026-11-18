@@ -1,0 +1,18 @@
+# סביבות Python והתקנות (לא מעלים לגיטהאב)
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# קבצים של Visual Studio / VS Code
+.vs/
+.vscode/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# קבצים זמניים של Office ו-Windows
+~$*
+Thumbs.db
+desktop.ini

@@ -53,7 +53,7 @@ if len(f) < 30:
 
 # ---------------------------------------------------------------- חישובים
 bins = [-1, 0, 10, 25, 50, 10_000]
-labels = ["ללא", "1–10", "10–25", "25–50", "50+"]
+labels = ["ללא", "1 עד 10", "10 עד 25", "25 עד 50", "50 ומעלה"]
 f = f.assign(dose_group=pd.cut(f.supp_vitd_mcg, bins, labels=labels))
 by_dose = (f.groupby("dose_group", observed=True)
              .agg(n=("seqn", "size"), low_pct=("vitd_low", "mean"), mean_vitd=("vitd_nmol_l", "mean"))

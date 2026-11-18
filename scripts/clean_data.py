@@ -9,7 +9,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW, OUT = ROOT / "data" / "raw", ROOT / "data"
-read = lambda n: pd.read_sas(RAW / f"{n}.xpt", format="xport")
+read = lambda n: pd.read_sas(RAW / f"{n}.xpt", format="xport", encoding=None)
 log = []
 def step(name, before, after, why):
     log.append({"step": name, "rows_before": before, "rows_after": after, "rows_affected": before - after, "why": why})
