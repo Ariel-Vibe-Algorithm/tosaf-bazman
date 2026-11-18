@@ -44,16 +44,19 @@ sex_map = {"male": "גברים", "female": "נשים"}
 sexes = st.sidebar.multiselect("מין", list(sex_map), default=list(sex_map), format_func=sex_map.get)
 races = sorted(df.race_ethnicity.unique())
 chosen_races = st.sidebar.multiselect("מוצא (קטגוריות NHANES)", races, default=races)
+season_map = {"Nov-Apr": "נובמבר–אפריל (חורף)", "May-Oct": "מאי–אוקטובר (קיץ)"}
+seasons = st.sidebar.multiselect("עונת הבדיקה", list(season_map), default=list(season_map), format_func=season_map.get)
 st.sidebar.caption("הפילטרים משנים את כל המדדים, הגרפים והטבלה.")
 
-f = df[df.age_years.between(age_lo, age_hi) & df.sex.isin(sexes) & df.race_ethnicity.isin(chosen_races)]
+f = df[df.age_years.between(age_lo, age_hi) & df.sex.isin(sexes) & df.race_ethnicity.isin(chosen_races)
+       & df.exam_season.isin(seasons)]
 if len(f) < 30:
     st.warning("הסינון הותיר פחות מ-30 נבדקים, ולכן אי אפשר להציג תוצאות. הרחיבי את הסינון בצד.")
     st.stop()
 
 # ---------------------------------------------------------------- חישובים
 bins = [-1, 0, 10, 25, 50, 10_000]
-labels = ["ללא", "1–10", "10–25", "25–50", "50+"]
+labels = ["ללא", "1 עד 10", "10 עד 25", "25 עד 50", "50 ומעלה"]
 f = f.assign(dose_group=pd.cut(f.supp_vitd_mcg, bins, labels=labels))
 by_dose = (f.groupby("dose_group", observed=True)
              .agg(n=("seqn", "size"), low_pct=("vitd_low", "mean"), mean_vitd=("vitd_nmol_l", "mean"))

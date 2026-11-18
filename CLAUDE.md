@@ -1,49 +1,59 @@
-# CLAUDE.md — הקשר לפרויקט
+# CLAUDE.md
 
-מסמך זה מסביר ל-Claude (ולחברי הצוות) על מה הפרויקט, מה יש בנתונים בפועל, ומה למדנו מהם. יש לעדכן אותו כשמשהו משתנה.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## על הפרויקט
-- **הרעיון:** כלי עזר לתזמון תוספי תזונה וויטמינים, שיעזור לספורטאים, סטודנטים ואנשים עם חסרים מוכרים (ברזל, ויטמין D, B12) לדעת מה לקחת, כמה ומתי.
-- **הבעיה שאנחנו עונים עליה:** שיפור ביצועים, כמויות, התאמות והשלמת חוסרים.
-- **במטלת הנתונים והדשבורד (M2):** בודקים עם נתונים אמיתיים אם נטילת תוספים קשורה לרמת ויטמין D בדם, ובאיזה מינון הקשר חזק.
+## Project context
 
-## הנתונים
-- **מקור:** NHANES 2017–2018 (CDC / NCHS), סקר בריאות ותזונה בארה"ב. קבצים: `DEMO_J`, `DSQTOT_J`, `DSQIDS_J`, `VID_J`, `FERTIN_J`, `BMX_J`, ב-`data/raw/`.
-- **קובץ נקי:** `data/nhanes_supplements_vitd_clean.csv`, 5,068 מבוגרים × 24 עמודות, בלי חוסרים ובלי כפילויות.
-- **שחזור:** `python scripts/clean_data.py` (קורא מ-`data/raw/`, כותב את ה-CSV ואת `data/cleaning_log.csv`).
-- **משתנה יעד (y):** `vitd_nmol_l` (רגרסיה). נגזרים: `vitd_low` (0/1, מתחת ל-50 nmol/L) ו-`vitd_status` (חסר <30, לא מספק 30–49.9, מספק ≥50).
-- **משתנים מסבירים:** `age_years`, `sex`, `race_ethnicity`, `bmi`, `weight_kg`, `ferritin_ng_ml`, `takes_supplement`, `n_supplements`, צריכה יומית ממוצעת מתוספים (`supp_vitd_mcg`, `supp_vitc_mg`, `supp_magnesium_mg`, `supp_iron_mg`, `supp_zinc_mg`, `supp_b12_mcg`, `supp_calcium_mg`), ודגלי מוצרים (`takes_probiotic`, `takes_fish_oil`, `takes_multivitamin`, `takes_creatine`, `takes_protein_powder`).
+**תוסף בזמן (TosafBazman)**: a student project for the "Vibe Coding with Claude" course at Ariel University (semester A, 5787). It builds a personal schedule for taking dietary supplements and estimates who should get tested for a deficiency.
 
-## החלטות ניקוי (פירוט מלא ב-`data/cleaning_log.csv` וב-`docs/DATA_CARD_he.md`)
-- 9,254 נבדקים ← 5,068: מבוגרים 18+, ללא הריון, עם מדידת ויטמין D, BMI ופריטין, ללא תשובות "סירב/לא יודע".
-- מינון ריק הוחלף ב-0 (אין צריכה מהחומר), לא בממוצע.
-- פריטין ומינוני תוספים נחתכו באחוזון 99 (פריטין מקסימלי אחרי חיתוך: 848.33). משתנה היעד לא נחתך.
-- לא הוחלו משקלות סקר של NHANES. הממוצעים הם של המדגם ולא של כלל אוכלוסיית ארה"ב.
+- **Team:** all three are first-year nutrition sciences students.
+  - Ran Refaelov: programmer, repo and Streamlit.
+  - Polina Shifitsin: data and product (NHANES cleaning, Data Card, timing rules table).
+  - Avital Magnetza: UX/UI.
+- **Milestones:** M1 (definition doc) is done. M2 (data + dashboard) is due 25/11/2026 at 14:00, with a 3-minute pitch from the running dashboard at the start of session 6. M3 is the trained model. A formal ML spec and a weekly plan will be added after course sessions 6 and 8.
+- **Language:** the user writes in Hebrew, and `README.md` is in Hebrew. Reply in Hebrew unless asked otherwise. The team has no programming background, so explain in plain words.
+- **Source of truth:** `README.md` is the spec and also holds the M2 Data Card, "what we fixed and why", insights, baseline and team table. Read it before planning work.
 
-## מה למדנו מהנתונים בפועל
-- ממוצע ויטמין D: 68.4 nmol/L (חציון 64.5). **29.4%** מהנבדקים מתחת ל-50 nmol/L.
-- **מינון ויטמין D מתוספים ויחס הרמה הנמוכה:** ללא תוסף 41.2% (n=3,151) · 1–10 מק"ג 23.6% (461) · 10–25 מק"ג 9.0% (737) · 25–50 מק"ג 3.6% (362) · 50+ מק"ג 1.4% (357).
-- **55.3%** מהנבדקים נטלו תוסף כלשהו ב-30 הימים האחרונים. בקרב לא נוטלים 45.5% ברמה נמוכה, ובקרב נוטלים 16.5%.
-- **הבדלי מוצא גדולים:** 51.2% ברמה נמוכה אצל Non-Hispanic Black לעומת 12.7% אצל Non-Hispanic White. הבדל מין קטן (נשים 28.7%, גברים 30.2%).
-- **BMI:** 33.8% ברמה נמוכה אצל BMI מעל 30, לעומת כ-26% בטווחים 18.5–30.
-- מוצרים: מולטי-ויטמין 1,159 נוטלים, שמן דגים 574, פרוביוטיקה 146. **קריאטין רק 11 נוטלים ואבקת חלבון 16.** אין מספיק נתונים להסיק עליהם.
-- **Baseline:** רגרסיה: חיזוי החציון (64.5), שגיאה ממוצעת (MAE) 23.8 nmol/L. סיווג (`vitd_low`): תמיד "לא נמוך", דיוק 70.6%. מודל במפגש 6 צריך לנצח את שניהם.
+## Repo layout
 
-## מגבלות וכללי כתיבה (חשוב)
-- **קשר ולא סיבתיות.** זה מדגם חתך. לכתוב "נוטלי תוסף נמצאים בממוצע ברמה גבוהה יותר", ולא "התוסף גרם לעלייה".
-- **אין ב-NHANES נתוני ביצועים** (כוח, ריצה). את "שיפור ביצועים" מציגים כרקע, לא כתוצאה מהנתונים.
-- **אין בנתונים עמודת מיקום** ולכן אין מפה בדשבורד.
-- הנתונים של תושבי ארה"ב בלבד ואינם מייצגים את האוכלוסייה בישראל.
-- **מידע רפואי:** האפליקציה היא כלי עזר ולא ייעוץ רפואי. לא נותנים הנחיות מינון אישיות.
+- `app.py`: Streamlit EDA dashboard (RTL Hebrew). Reads `data/nhanes_supplements_vitd_clean.csv` and `data/supplement_intake_by_person.csv`. Sidebar filters (age, sex, race/ethnicity, exam season) drive every metric, chart and table. Shows the insight sentence, 4 `st.metric`s (KPI = % with 25(OH)D < 50 nmol/L), 3 baseline metrics, charts and a sample table. No map: the data has no location.
+- `data/raw/`: original NHANES 2017–2018 XPT files (`DEMO_J`, `DSQTOT_J`, `DSQIDS_J`, `VID_J`, `FERTIN_J`, `BMX_J`). Never modify them.
+- `scripts/clean_data.py`: raw → `data/nhanes_supplements_vitd_clean.csv` + `data/cleaning_log.csv`. Must print `9254 שורות -> נקי: 5068 שורות`.
+- `scripts/build_supplement_tables.py`: → `data/supplement_intake_by_person.csv` (16 nutrients per person) and `data/supplement_prevalence.csv`.
+- `scripts/build_timing_rules.py`: the rules are written in Python dicts here and it writes `data/timing_rules.csv`. `scripts/make_xlsx.py` turns that CSV into `docs/timing_rules.xlsx` for human review. Edit rules in the script, then rebuild both.
+- `prototype/tosaf-bazman.html`: the M1 prototype (single-file Hebrew RTL HTML, vanilla JS). Published artifact: https://claude.ai/artifact/XW47W1rhrcCKfZRuuHZBdY. Republish to that same URL; a new publish creates a new link.
+- `requirements.txt`: pinned (`streamlit==1.67.0`, `altair==6.3.0`, `pandas==3.1.1`, `numpy==2.5.5`). Tested in a fresh venv (Python 3.13) on 18/11/2026.
+- `.gitignore` excludes `venv/`, `.venv/`, `.vs/`, `__pycache__/`. Never commit a virtual environment.
 
-## איך מריצים
-```
+## What we learned from the data (M2)
+
+- Clean file: **5,068 adults × 25 columns**, no missing values, no duplicates. 9,254 → 5,068: adults 18+, not pregnant, with a vitamin D measurement, BMI and ferritin, no "refused/don't know".
+- Empty supplement doses were filled with 0 (= no intake from supplements), not the mean. Ferritin and doses were clipped at the 99th percentile. The target was not clipped. NHANES survey weights were **not** applied, so numbers describe the sample, not the US population.
+- Target: `vitd_nmol_l` (regression). Derived: `vitd_low` (1 if < 50 nmol/L) and `vitd_status` (<30 deficient, 30–49.9 insufficient, ≥50 sufficient, per NIH ODS).
+- Mean 25(OH)D 68.4 nmol/L, median 64.5. **29.4%** are below 50.
+- % low by vitamin D dose from supplements: none 41.2% (n=3,151) · >0–10 mcg 23.6% · >10–25 mcg 9.0% · >25–50 mcg 3.6% · >50 mcg 1.4%.
+- 55.3% took any supplement in the last 30 days. Large race/ethnicity gap (Non-Hispanic Black 51.2% low vs Non-Hispanic White 12.7%); small sex gap. BMI > 30: 33.8% low vs ~26% at 18.5–30.
+- Exam season (`exam_season`, from `RIDEXMON`): Nov-Apr 35.4% low vs May-Oct 23.8% (non-users: 53.0% vs 38.2%). NHANES runs winter exams mostly in southern states, so the true seasonal gap is likely larger.
+- Creatine (11 people) and protein powder (16) are too rare to analyse.
+- **Baseline for M3:** regression = predict the median 64.5 → MAE 23.8 nmol/L. Classification (`vitd_low`) = always "not low" → accuracy 70.6%.
+
+## Timing rules table (`data/timing_rules.csv`)
+
+- 40 supplements, one row each. Columns: `best_time`, `with_food`, `doses_per_day`, `next_dose_after_hours` (24 = once a day, 12 = twice), `can_split`, `separate_from` (format `name:minutes; name:minutes`, applies in both directions), `avoid_food_drinks` + `food_drinks_gap_minutes`, `drug_interactions` + `drug_gap`, `severity` (חמורה/בינונית/קלה), `works_well_with`, `caution`, `confidence`, `confidence_note`, `source_main`, `source_extra`.
+- `confidence`: מבוסס = stated in NIH ODS / NCCIH; חלקי = partly sourced, partly common practice (usually time of day); מקובל = common practice only and needs team review. Keep every rule traceable to a source, and never upgrade a confidence level without a source.
+- Known gaps: psyllium and collagen have no source yet; glucosamine and L-theanine are only loosely sourced. MedlinePlus was not reachable when the table was built.
+- The prototype's `SEP` pairs (iron vs calcium/zinc/magnesium, zinc vs calcium) match this table.
+
+## Writing rules (important)
+
+- **Association, not causation.** Cross-sectional data. Write "supplement users have higher levels on average", never "the supplement raised the level".
+- NHANES has no performance data (strength, running), and it is US-only, not Israel.
+- Every number in the README or the pitch must come from the clean file or a script. Don't invent numbers.
+- The app is a helper, not medical advice. No personal dosing instructions.
+
+## Run
+
+```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
-הדשבורד (`app.py`) קורא את `data/nhanes_supplements_vitd_clean.csv` ומציג 4 מדדים, baseline, 3 גרפים, פילטרים בצד וטבלת דוגמה.
-
-## כללים לעבודה עם Claude בפרויקט
-- לפני שינוי בנתונים: להריץ `python scripts/clean_data.py` ולוודא שהפלט עדיין "9254 שורות -> 5068 שורות".
-- כל מספר חדש ב-README או בפיץ' צריך להגיע מהקובץ הנקי או מהסקריפט, לא להמציא.
-- להשאיר את `data/raw/` ללא שינוי.

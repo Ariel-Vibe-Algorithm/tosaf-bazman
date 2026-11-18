@@ -9,7 +9,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW, OUT = ROOT / "data" / "raw", ROOT / "data"
-read = lambda n: pd.read_sas(RAW / f"{n}.xpt", format="xport")
+read = lambda n: pd.read_sas(RAW / f"{n}.xpt", format="xport", encoding=None)
 log = []
 def step(name, before, after, why):
     log.append({"step": name, "rows_before": before, "rows_after": after, "rows_affected": before - after, "why": why})
@@ -22,7 +22,7 @@ dups = sum(int(d.SEQN.duplicated().sum()) for d in (demo, tot, vid, fer, bmx))
 log.append({"step": "duplicates", "rows_before": len(demo), "rows_after": len(demo), "rows_affected": dups,
             "why": "בדקנו SEQN כפול בכל חמשת הקבצים; לא נמצאו כפילויות (לכן לא הוסרו שורות)"})
 
-df = demo[["SEQN", "RIDAGEYR", "RIAGENDR", "RIDRETH3", "RIDEXPRG"]]
+df = demo[["SEQN", "RIDAGEYR", "RIAGENDR", "RIDRETH3", "RIDEXPRG", "RIDEXMON"]]
 df = df.merge(vid[["SEQN", "LBXVIDMS"]], on="SEQN", how="left")
 df = df.merge(fer[["SEQN", "LBXFER"]], on="SEQN", how="left")
 df = df.merge(bmx[["SEQN", "BMXBMI", "BMXWT"]], on="SEQN", how="left")
@@ -68,11 +68,12 @@ for col, p in pat.items():
 df["sex"] = df.RIAGENDR.map({1: "male", 2: "female"})
 df["race_ethnicity"] = df.RIDRETH3.map({1: "Mexican American", 2: "Other Hispanic", 3: "Non-Hispanic White",
                                         4: "Non-Hispanic Black", 6: "Non-Hispanic Asian", 7: "Other/Multiracial"})
+df["exam_season"] = df.RIDEXMON.map({1: "Nov-Apr", 2: "May-Oct"})  # עונת הבדיקה: חשיפה לשמש משפיעה על ויטמין D
 df["age_years"] = df.RIDAGEYR.round().astype(int)
 df = df.rename(columns={"SEQN": "seqn", "BMXBMI": "bmi", "BMXWT": "weight_kg", "LBXFER": "ferritin_ng_ml", "LBXVIDMS": "vitd_nmol_l"})
 df["seqn"] = df.seqn.astype(int)
 log.append({"step": "types_and_labels", "rows_before": len(df), "rows_after": len(df), "rows_affected": len(df),
-            "why": "קודים מספריים הוחלפו בתוויות (מין, מוצא); גיל ו-SEQN הומרו למספר שלם; שמות עמודות תורגמו לשמות ברורים"})
+            "why": "קודים מספריים הוחלפו בתוויות (מין, מוצא, עונת הבדיקה); גיל ו-SEQN הומרו למספר שלם; שמות עמודות תורגמו לשמות ברורים"})
 
 # 10. חריגים: חיתוך (winsorize) באחוזון 99 לפריטין ולמינוני תוספים; y נשאר כפי שנמדד
 clipped = 0
@@ -89,7 +90,7 @@ df["vitd_status"] = pd.cut(df.vitd_nmol_l, [0, 30, 50, np.inf], right=False,
                            labels=["deficient (<30)", "inadequate (30-49.9)", "sufficient (>=50)"]).astype(str)
 df["vitd_low"] = (df.vitd_nmol_l < 50).astype(int)
 
-cols = ["seqn", "age_years", "sex", "race_ethnicity", "bmi", "weight_kg", "ferritin_ng_ml", "takes_supplement", "n_supplements",
+cols = ["seqn", "age_years", "sex", "race_ethnicity", "exam_season", "bmi", "weight_kg", "ferritin_ng_ml", "takes_supplement", "n_supplements",
         "supp_vitd_mcg", "supp_vitc_mg", "supp_magnesium_mg", "supp_iron_mg", "supp_zinc_mg", "supp_b12_mcg", "supp_calcium_mg",
         "takes_creatine", "takes_probiotic", "takes_fish_oil", "takes_multivitamin", "takes_protein_powder",
         "vitd_nmol_l", "vitd_status", "vitd_low"]
