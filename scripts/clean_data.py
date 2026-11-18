@@ -89,11 +89,16 @@ log.append({"step": "clip_outliers_p99", "rows_before": len(df), "rows_after": l
 df["vitd_status"] = pd.cut(df.vitd_nmol_l, [0, 30, 50, np.inf], right=False,
                            labels=["deficient (<30)", "inadequate (30-49.9)", "sufficient (>=50)"]).astype(str)
 df["vitd_low"] = (df.vitd_nmol_l < 50).astype(int)
+# y שני: מאגרי ברזל נמוכים. סף WHO 2020 למבוגרים בריאים: פריטין מתחת ל-15 ng/mL (= µg/L).
+# החיתוך באחוזון 99 נוגע רק לערכים הגבוהים, ולכן לא משנה את הסיווג הזה.
+df["iron_low"] = (df.ferritin_ng_ml < 15).astype(int)
+log.append({"step": "derive_targets", "rows_before": len(df), "rows_after": len(df), "rows_affected": len(df),
+            "why": "נגזרו משתני יעד: vitd_status ו-vitd_low (סף 50 nmol/L, NIH ODS) ו-iron_low (פריטין מתחת ל-15 ng/mL, WHO 2020)"})
 
 cols = ["seqn", "age_years", "sex", "race_ethnicity", "exam_season", "bmi", "weight_kg", "ferritin_ng_ml", "takes_supplement", "n_supplements",
         "supp_vitd_mcg", "supp_vitc_mg", "supp_magnesium_mg", "supp_iron_mg", "supp_zinc_mg", "supp_b12_mcg", "supp_calcium_mg",
         "takes_creatine", "takes_probiotic", "takes_fish_oil", "takes_multivitamin", "takes_protein_powder",
-        "vitd_nmol_l", "vitd_status", "vitd_low"]
+        "vitd_nmol_l", "vitd_status", "vitd_low", "iron_low"]
 df = df[cols].round(2).reset_index(drop=True)
 assert df.isna().sum().sum() == 0 and not df.seqn.duplicated().any()
 df.to_csv(OUT / "nhanes_supplements_vitd_clean.csv", index=False, encoding="utf-8")
