@@ -100,8 +100,11 @@ if view.startswith("תזמון"):
         st.metric("תוספים בתצוגה", len(rf), border=True)
         st.metric("KPI: צריכים הפרדה מתוסף אחר", f"{100 * n_sep / len(rf):.0f}%", border=True,
                   help="אחוז התוספים שצריך להרחיק מתוסף אחר בשעתיים לפחות. זה הדבר הראשון שהמשתמש בודק: מה אסור לקחת יחד.")
-        st.metric("עובדות ממחקרים (עם מקור)", f"{len(res_f):,}", border=True)
-        st.metric("עובדות ממקורות ישראליים", f"{n_il:,}", border=True)
+        n_extra = (~research.supplement_he.isin(rules.supplement_he)).sum()
+        extra_note = (f"סופרים רק עובדות על התוספים שבתצוגה. בטבלה יש עוד {n_extra} עובדות רקע על תוספים "
+                      "שאינם בין ה-40 (למשל קפאין ובטא-אלנין), והן לא נספרות כאן.")
+        st.metric("עובדות ממחקרים (עם מקור)", f"{len(res_f):,}", border=True, help=extra_note)
+        st.metric("עובדות ממקורות ישראליים", f"{n_il:,}", border=True, help=extra_note)
 
     st.markdown(
         f"**בתצוגה הזו:** {n_sep} מתוך {len(rf)} תוספים צריכים הפרדה מתוסף אחר, ו-{n_avoid} צריכים להתרחק "

@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Ran Refaelov: programmer, repo and Streamlit.
   - Polina Shifitsin: data and product (NHANES cleaning, Data Card, timing rules table).
   - Avital Magnetza: UX/UI.
-- **Milestones:** M1 (definition doc) is done. M2 (data + dashboard) is due 25/11/2026 at 14:00, with a 3-minute pitch from the running dashboard at the start of session 6. M3 is the trained model. A formal ML spec and a weekly plan will be added after course sessions 6 and 8.
+- **Milestones:** M1 (definition doc) is done. M2 (data + dashboard) is due 25/11/2026 at 14:00 (public GitHub repo; every member submits the repo link on MoodLearn). Session 5 (18/11) is a checkpoint: data already loaded in the repo. The 3-minute pitch from the running dashboard at the start of session 6 is the lowest priority for the team. M3 is the trained model. A formal ML spec and a weekly plan will be added after course sessions 6 and 8.
 - **Language:** the user writes in Hebrew, and `README.md` is in Hebrew. Reply in Hebrew unless asked otherwise. The team has no programming background, so explain in plain words.
 - **Source of truth:** `README.md` is the spec and also holds the M2 Data Card, "what we fixed and why", insights, baseline and team table. Read it before planning work.
 
@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `scripts/build_supplement_tables.py`: → `data/supplement_intake_by_person.csv` (16 nutrients per person) and `data/supplement_prevalence.csv`.
 - `scripts/build_timing_rules.py`: the rules are written in Python dicts here and it writes `data/timing_rules.csv`. `scripts/make_xlsx.py` turns that CSV into `docs/timing_rules.xlsx` for human review. Edit rules in the script, then rebuild both.
 - `prototype/tosaf-bazman.html`: the M1 prototype (single-file Hebrew RTL HTML, vanilla JS). Published artifact: https://claude.ai/artifact/XW47W1rhrcCKfZRuuHZBdY. Republish to that same URL; a new publish creates a new link.
-- `requirements.txt`: pinned (`streamlit==1.67.0`, `altair==6.3.0`, `pandas==3.1.1`, `numpy==2.5.5`). Tested in a fresh venv (Python 3.13) on 18/11/2026.
+- `requirements.txt`: pinned (`streamlit==1.67.0`, `altair==6.3.0`, `pandas==3.1.1`, `numpy==2.5.5`). Tested in a fresh venv (Python 3.13, and again with 3.15 in `.venv/`) on 18/11/2026.
 - `.gitignore` excludes `venv/`, `.venv/`, `.vs/`, `__pycache__/`. Never commit a virtual environment.
 
 ## What we learned from the data (M2)
