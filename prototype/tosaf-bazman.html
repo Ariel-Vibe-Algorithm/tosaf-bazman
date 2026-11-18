@@ -1,0 +1,430 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>תוסף בזמן</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=IBM+Plex+Sans+Hebrew:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: pill-organizer day. Profile + supplements column beside a 24h dial and the dose timeline; need-check strip below. */
+:root{
+  --bg:#EDF1F0;
+  --surface:#FFFFFF;
+  --ink:#12302B;
+  --muted:#58706A;
+  --line:#D2DCD9;
+  --accent:#DA6F12;      /* capsule amber: doses */
+  --accent-ink:#FFFFFF;
+  --pine:#1D5C52;        /* meals, anchors */
+  --night:#D9E0EC;       /* sleep arc */
+  --ok:#2C7A4B; --warn:#A86A12; --crit:#B4392C; --info:#3C5F8A;
+  --ok-bg:#E3F1E8; --warn-bg:#F8EEDB; --crit-bg:#F7E2DF; --info-bg:#E3EAF3;
+  --f-display:"Secular One","Rubik","Arial Hebrew",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Hebrew","Assistant","Arial Hebrew",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Consolas",monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0D1917; --surface:#14231F; --ink:#E2EDE9; --muted:#91A7A1; --line:#273A35;
+    --accent:#F08C34; --accent-ink:#1A0F05; --pine:#62B5A5; --night:#1E2A3C;
+    --ok:#62C38A; --warn:#E3AA4F; --crit:#EE7A6C; --info:#8CB2E0;
+    --ok-bg:#16301F; --warn-bg:#33270F; --crit-bg:#3A1C18; --info-bg:#18263A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0D1917; --surface:#14231F; --ink:#E2EDE9; --muted:#91A7A1; --line:#273A35;
+  --accent:#F08C34; --accent-ink:#1A0F05; --pine:#62B5A5; --night:#1E2A3C;
+  --ok:#62C38A; --warn:#E3AA4F; --crit:#EE7A6C; --info:#8CB2E0;
+  --ok-bg:#16301F; --warn-bg:#33270F; --crit-bg:#3A1C18; --info-bg:#18263A;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;direction:rtl;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 48px;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;line-height:1.15}
+h1{font-size:clamp(34px,5vw,52px);letter-spacing:-.01em}
+h2{font-size:21px}
+h3{font-size:16px}
+p{margin:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.eyebrow{font-size:12px;letter-spacing:.06em;color:var(--muted);font-weight:600}
+
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;border-bottom:2px solid var(--ink);padding-bottom:16px}
+header .lede{color:var(--muted);max-width:56ch;margin-top:6px;font-size:16px}
+.stage{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;color:var(--muted);background:var(--surface);white-space:nowrap}
+
+.grid{display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:1fr}}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.side{display:flex;flex-direction:column;gap:22px}
+
+.times{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:13px;color:var(--muted)}
+input[type=time],input[type=number],select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:100%}
+input[type=time],input[type=number]{font-family:var(--f-mono);direction:ltr;text-align:right}
+select:disabled{opacity:.45}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);margin:0;flex:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.supps{display:flex;flex-direction:column}
+.supp{display:grid;grid-template-columns:auto 1fr 132px;align-items:center;gap:6px 10px;padding:8px 0;border-top:1px solid var(--line)}
+.supp:first-child{border-top:0}
+.supp .nm{display:flex;flex-direction:column;line-height:1.25}
+.supp .nm b{font-weight:600}
+.supp .nm small{color:var(--muted);font-size:12px}
+.supp select{font-size:13px;padding:4px 6px}
+
+.day{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:22px;align-items:start}
+@media (max-width:1040px){.day{grid-template-columns:1fr}}
+.dial-box{display:flex;flex-direction:column;align-items:center;gap:10px}
+.dial{width:100%;max-width:330px;height:auto;aspect-ratio:1}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);justify-content:center}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:5px;vertical-align:-1px}
+
+.timeline{display:flex;flex-direction:column;gap:0}
+.slot{display:grid;grid-template-columns:30px 58px 1fr;gap:4px 12px;padding:12px 0;border-top:1px solid var(--line)}
+.slot:first-child{border-top:0;padding-top:0}
+.num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-mono);font-size:13px}
+.num.done{background:var(--ok);color:var(--surface)}
+.slot .t{font-size:17px;padding-top:1px}
+.doses{display:flex;flex-direction:column;gap:10px}
+.dose{display:flex;gap:10px;align-items:flex-start}
+.dose input{margin-top:3px}
+.dose .txt{display:flex;flex-direction:column;gap:2px}
+.dose .ttl{font-weight:600}
+.dose .ttl .mono{font-weight:500;font-size:12px;color:var(--muted);margin-inline-start:6px}
+.dose .why{color:var(--muted);font-size:13.5px;max-width:62ch}
+.dose.taken .ttl{text-decoration:line-through;text-decoration-color:var(--ok)}
+
+.notes{display:flex;flex-direction:column;gap:8px}
+.note{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:9px 12px;border-radius:8px;font-size:13.5px;background:var(--info-bg)}
+.pill{font-size:11px;font-weight:600;letter-spacing:.04em;padding:2px 8px;border-radius:999px;color:var(--surface);background:var(--info);white-space:nowrap;margin-top:1px}
+.note.ok{background:var(--ok-bg)} .note.ok .pill{background:var(--ok)}
+.note.warn{background:var(--warn-bg)} .note.warn .pill{background:var(--warn)}
+.note.crit{background:var(--crit-bg)} .note.crit .pill{background:var(--crit)}
+.empty{color:var(--muted);padding:18px 0}
+
+.need{display:grid;grid-template-columns:300px 1fr;gap:22px}
+@media (max-width:880px){.need{grid-template-columns:1fr}}
+.need-in{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;align-content:start}
+.need-in .wide{grid-column:1/-1}
+.risks{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:560px){.risks{grid-template-columns:1fr}}
+.risk{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.risk .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bar{height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+.bar span{display:block;height:100%;border-radius:4px;background:var(--pine);transition:width .3s}
+.risk .lvl{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;color:var(--surface)}
+.risk small{color:var(--muted);font-size:12.5px}
+.caveat{font-size:13px;color:var(--muted);max-width:75ch}
+
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;max-width:80ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap" lang="he" dir="rtl">
+  <header>
+    <div>
+      <div class="eyebrow">וייב קודינג עם קלוד · אבן דרך 1</div>
+      <h1>תוסף בזמן</h1>
+      <p class="lede">לוח זמנים אישי לנטילת תוספי תזונה. מתי לקחת כל תוסף, עם מה, ואילו תוספים צריך להפריד כדי שלא יפריעו זה לספיגת זה.</p>
+    </div>
+    <span class="stage">אב-טיפוס · נתוני פרופיל לדוגמה</span>
+  </header>
+
+  <div class="grid">
+    <div class="side">
+      <section class="panel" aria-labelledby="h-day">
+        <div class="panel-head"><h2 id="h-day">היום שלי</h2><span class="eyebrow">שעות</span></div>
+        <div class="times">
+          <div class="field"><label for="t-wake">קימה</label><input type="time" id="t-wake" value="07:00"></div>
+          <div class="field"><label for="t-sleep">שינה</label><input type="time" id="t-sleep" value="23:30"></div>
+          <div class="field"><label for="t-bf">ארוחת בוקר</label><input type="time" id="t-bf" value="08:30"></div>
+          <div class="field"><label for="t-lunch">ארוחת צהריים</label><input type="time" id="t-lunch" value="13:30"></div>
+          <div class="field"><label for="t-dinner">ארוחת ערב</label><input type="time" id="t-dinner" value="19:30"></div>
+          <div class="field"><label for="t-workout">תחילת אימון</label><input type="time" id="t-workout" value="17:00"></div>
+        </div>
+        <label class="check" for="has-workout"><input type="checkbox" id="has-workout" checked> יש אימון היום</label>
+      </section>
+
+      <section class="panel" aria-labelledby="h-supps">
+        <div class="panel-head"><h2 id="h-supps">התוספים שלי</h2><span class="eyebrow">ולמה</span></div>
+        <div class="supps" id="supps"></div>
+      </section>
+    </div>
+
+    <section class="panel" aria-labelledby="h-plan">
+      <div class="panel-head"><h2 id="h-plan">לוח הנטילה להיום</h2><span class="eyebrow mono" id="today"></span></div>
+      <div class="day">
+        <div class="dial-box">
+          <svg class="dial" id="dial" viewBox="0 0 320 320" role="img" aria-label="שעון של 24 שעות עם זמני הנטילה"></svg>
+          <div class="legend">
+            <span><i style="background:var(--accent)"></i>מנה</span>
+            <span><i style="background:var(--ok)"></i>נלקחה</span>
+            <span><i style="background:var(--pine)"></i>ארוחה / אימון</span>
+            <span><i style="background:var(--night)"></i>שינה</span>
+          </div>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+      <div>
+        <h3 style="margin-bottom:8px">התאמות ואזהרות</h3>
+        <div class="notes" id="notes"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-need">
+    <div class="panel-head"><h2 id="h-need">כדאי לי לבדוק חוסר?</h2><span class="eyebrow">תצוגה מקדימה של המודל</span></div>
+    <div class="need">
+      <div class="need-in">
+        <div class="field"><label for="n-age">גיל</label><input type="number" id="n-age" min="12" max="90" value="22"></div>
+        <div class="field"><label for="n-sex">מין</label><select id="n-sex"><option value="f" selected>אישה</option><option value="m">גבר</option></select></div>
+        <div class="field"><label for="n-diet">תזונה</label><select id="n-diet"><option value="omni">מעורבת</option><option value="veg" selected>צמחונית</option><option value="vegan">טבעונית</option></select></div>
+        <div class="field"><label for="n-bmi">BMI</label><select id="n-bmi"><option value="lo">מתחת ל-25</option><option value="mid" selected>25 עד 30</option><option value="hi">מעל 30</option></select></div>
+        <div class="field"><label for="n-season">עונה</label><select id="n-season"><option value="win" selected>חורף (נוב׳ עד אפר׳)</option><option value="sum">קיץ (מאי עד אוק׳)</option></select></div>
+        <div class="field"><label for="n-sun">חשיפה לשמש</label><select id="n-sun"><option value="low" selected>מעט</option><option value="high">הרבה</option></select></div>
+        <label class="check wide" for="n-dsupp"><input type="checkbox" id="n-dsupp"> כבר לוקח/ת ויטמין D</label>
+        <label class="check wide" for="n-tired"><input type="checkbox" id="n-tired" checked> עייפות מתמשכת</label>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="risks" id="risks"></div>
+        <p class="caveat">ההערכה כאן היא הדגמה מבוססת כללים, והמשקלות נקבעו ידנית. באבן דרך 3 נאמן מודל סיווג על נתוני NHANES 2017–2018 (‏8,366 משתתפים עם בדיקת ויטמין D בדם), שיחזה את הסיכוי שרמת ויטמין D תהיה מתחת ל-50 nmol/L לפי גיל, מין, BMI, עונה ושימוש בתוספים.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>תוסף בזמן הוא פרויקט סטודנטים במדעי התזונה, אוניברסיטת אריאל. הכלי לא מחליף ייעוץ רפואי או ייעוץ של דיאטנית. כללי התזמון מבוססים על דפי המידע של NIH Office of Dietary Supplements. מי שנוטל/ת תרופות קבועות צריך/ה לבדוק התאמה עם רוקח/ת או רופא/ה.</footer>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const toMin = v => { const [h,m] = (v||'00:00').split(':').map(Number); return h*60+m; };
+const norm = m => ((Math.round(m/5)*5) % 1440 + 1440) % 1440;
+const fmt = m => { m = norm(m); return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); };
+const gap = (a,b) => { const d = Math.abs(norm(a)-norm(b)); return Math.min(d, 1440-d); };
+
+const REASONS = {def:'חוסר בבדיקת דם', perf:'ביצועים ואימון', sleep:'שינה ורגיעה', maint:'שמירה כללית'};
+
+const SUPPS = [
+  {id:'iron', name:'ברזל', dose:'לפי המלצה', reasons:['def','maint'], on:true, r:'def',
+   cand:d=>[
+    {t:Math.max(d.wake+15, d.bf-60), why:'על קיבה ריקה, כשעה לפני ארוחת הבוקר. עם מים או מיץ הדר, בלי קפה או תה בשעה הקרובה.'},
+    {t:(d.bf+d.lunch)/2, why:'בין ארוחת הבוקר לצהריים, על קיבה ריקה יחסית. בלי קפה או תה בשעה הקרובה.'},
+    {t:(d.lunch+d.dinner)/2, why:'בין הצהריים לערב, על קיבה ריקה יחסית.'}]},
+  {id:'vitc', name:'ויטמין C', dose:'100–500 מ״ג', reasons:['maint','def'], on:true, r:'maint',
+   cand:(d,placed)=> placed.iron
+     ? [{t:placed.iron.t, why:'יחד עם הברזל. ויטמין C משפר את ספיגת הברזל מהתוסף.'}]
+     : [{t:d.bf, why:'עם ארוחת הבוקר.'}]},
+  {id:'calcium', name:'סידן', dose:'עד 500 מ״ג למנה', reasons:['def','maint'], on:false, r:'maint',
+   cand:d=>[
+    {t:d.dinner, why:'עם ארוחת הערב. סידן קרבונט נספג טוב יותר עם אוכל. לא יותר מ-500 מ״ג בכל מנה.'},
+    {t:d.lunch, why:'עם ארוחת הצהריים. לא יותר מ-500 מ״ג בכל מנה.'},
+    {t:d.bf, why:'עם ארוחת הבוקר. לא יותר מ-500 מ״ג בכל מנה.'}]},
+  {id:'zinc', name:'אבץ', dose:'8–11 מ״ג', reasons:['def','maint'], on:false, r:'maint',
+   cand:d=>[
+    {t:d.lunch+120, why:'כשעתיים אחרי ארוחת הצהריים, לספיגה טובה. אם יש בחילה, אפשר לקחת עם אוכל.'},
+    {t:d.bf+120, why:'כשעתיים אחרי ארוחת הבוקר. אם יש בחילה, אפשר לקחת עם אוכל.'},
+    {t:d.dinner, why:'עם ארוחת הערב. הספיגה מעט נמוכה יותר, אבל יש פחות בחילה.'}]},
+  {id:'magnesium', name:'מגנזיום', dose:'200–350 מ״ג', reasons:['sleep','perf','def','maint'], on:true, r:'sleep',
+   cand:(d,_,r)=>[
+    ...(r==='sleep' ? [{t:d.sleep-60, why:'כשעה לפני השינה. הראיות לשיפור השינה מוגבלות, אבל זה זמן קבוע ונוח לשגרה.'}] : []),
+    {t:d.dinner, why:'עם ארוחת הערב. נטילה עם אוכל מפחיתה אי-נוחות בבטן.'},
+    {t:d.lunch, why:'עם ארוחת הצהריים. נטילה עם אוכל מפחיתה אי-נוחות בבטן.'}]},
+  {id:'vitd', name:'ויטמין D', dose:'600–2,000 IU', reasons:['def','maint'], on:true, r:'def',
+   cand:d=>[
+    {t:d.lunch, why:'עם הארוחה העיקרית. ויטמין D מסיס בשומן ונספג טוב יותר עם ארוחה שיש בה שומן.'},
+    {t:d.dinner, why:'עם ארוחת הערב, שיש בה שומן.'},
+    {t:d.bf, why:'עם ארוחת הבוקר. כדאי שתכלול מקור שומן.'}]},
+  {id:'creatine', name:'קריאטין', dose:'3–5 גרם', reasons:['perf','maint'], on:true, r:'perf',
+   cand:(d,_,r)=>[
+    ...(r==='perf' && d.workout!=null ? [{t:d.workout+75, why:'אחרי האימון, עם ארוחה או משקה חלבון. העיקר הוא נטילה יומית קבועה, ולתזמון יש השפעה קטנה.'}] : []),
+    {t:d.bf, why:'עם ארוחת הבוקר. העיקר הוא נטילה יומית קבועה, גם בימים בלי אימון.'},
+    {t:d.lunch, why:'עם ארוחת הצהריים. העיקר הוא נטילה יומית קבועה.'}]},
+  {id:'omega3', name:'אומגה 3', dose:'250–1,000 מ״ג', reasons:['maint','perf'], on:false, r:'maint',
+   cand:d=>[
+    {t:d.dinner, why:'עם ארוחה. משפר ספיגה ומפחית גיהוקים וטעם לוואי.'},
+    {t:d.lunch, why:'עם ארוחת הצהריים.'}]},
+  {id:'b12', name:'ויטמין B12', dose:'לפי המלצה', reasons:['def','maint'], on:false, r:'def',
+   cand:d=>[{t:d.bf, why:'בבוקר, עם או בלי אוכל. בתזונה טבעונית הוא חיוני.'}]},
+  {id:'probiotic', name:'פרוביוטיקה', dose:'לפי האריזה', reasons:['maint'], on:false, r:'maint',
+   cand:d=>[{t:d.bf, why:'עם ארוחת הבוקר או ממש לפניה, אלא אם כתוב אחרת על האריזה.'}]},
+];
+const ORDER = ['iron','vitc','calcium','zinc','magnesium','vitd','creatine','omega3','b12','probiotic'];
+const SEP = [
+  ['iron','calcium',120,'סידן מעכב את ספיגת הברזל'],
+  ['iron','zinc',120,'ברזל ואבץ מתחרים על אותו מנגנון ספיגה'],
+  ['iron','magnesium',120,'מגנזיום ונוגדי חומצה מפחיתים את ספיגת הברזל'],
+  ['zinc','calcium',120,'מינון גבוה של סידן מפחית את ספיגת האבץ'],
+];
+const byId = Object.fromEntries(SUPPS.map(s=>[s.id,s]));
+
+/* ---- storage (per-viewer convenience only) ---- */
+const todayKey = new Date().toISOString().slice(0,10);
+const store = {
+  get(k,f){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; }catch(e){ return f; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let taken = new Set(store.get('tb-taken-'+todayKey, []));
+const saved = store.get('tb-supps', null);
+if (saved) SUPPS.forEach(s => { if (saved[s.id]) { s.on = saved[s.id].on; s.r = saved[s.id].r; } });
+const savedTimes = store.get('tb-times', null);
+if (savedTimes) Object.entries(savedTimes).forEach(([id,v]) => { const el = document.getElementById(id); if (el) { if (el.type==='checkbox') el.checked = v; else el.value = v; } });
+
+$('#today').textContent = new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'numeric'});
+
+/* ---- supplement picker ---- */
+const suppsEl = $('#supps');
+SUPPS.forEach(s => {
+  const row = document.createElement('div');
+  row.className = 'supp';
+  row.innerHTML = `<input type="checkbox" id="s-${s.id}" ${s.on?'checked':''} aria-label="${s.name}">
+    <label class="nm" for="s-${s.id}"><b>${s.name}</b><small class="mono">${s.dose}</small></label>
+    <select id="r-${s.id}" aria-label="סיבה לנטילת ${s.name}">${s.reasons.map(r=>`<option value="${r}" ${r===s.r?'selected':''}>${REASONS[r]}</option>`).join('')}</select>`;
+  suppsEl.appendChild(row);
+  const cb = row.querySelector('input'), sel = row.querySelector('select');
+  sel.disabled = !s.on;
+  cb.addEventListener('change', ()=>{ s.on = cb.checked; sel.disabled = !s.on; render(); });
+  sel.addEventListener('change', ()=>{ s.r = sel.value; render(); });
+});
+
+const TIME_IDS = ['t-wake','t-sleep','t-bf','t-lunch','t-dinner','t-workout','has-workout'];
+TIME_IDS.forEach(id => document.getElementById(id).addEventListener('input', render));
+$('#has-workout').addEventListener('change', render);
+
+/* ---- scheduler ---- */
+function readDay(){
+  const wake = toMin($('#t-wake').value);
+  const rel = m => { let x = m; while (x < wake) x += 1440; return x; }; // minutes since day start, monotonic from wake
+  const d = { wake, bf:rel(toMin($('#t-bf').value)), lunch:rel(toMin($('#t-lunch').value)),
+    dinner:rel(toMin($('#t-dinner').value)), sleep:rel(toMin($('#t-sleep').value)),
+    workout: $('#has-workout').checked ? rel(toMin($('#t-workout').value)) : null };
+  return d;
+}
+function schedule(d){
+  const placed = {}, notes = [];
+  ORDER.map(id=>byId[id]).filter(s=>s.on).forEach(s=>{
+    const cands = s.cand(d, placed, s.r).map(c=>({...c, t: Math.min(Math.max(c.t, d.wake), d.sleep)}));
+    const clashes = c => SEP.filter(([a,b,min]) => (a===s.id && placed[b] && gap(c.t,placed[b].t)<min) || (b===s.id && placed[a] && gap(c.t,placed[a].t)<min));
+    let pick = cands.findIndex(c => clashes(c).length===0);
+    if (pick === -1){
+      pick = 0;
+      clashes(cands[0]).forEach(([a,b,,why]) => notes.push({lvl:'crit', tag:'התנגשות', text:`לא נמצא זמן שמפריד בין ${byId[a].name} ל${byId[b].name} לפחות שעתיים. ${why}. כדאי להזיז ארוחה או לשאול דיאטנית.`}));
+    } else if (pick > 0){
+      const moved = clashes(cands[0]).map(([a,b])=> byId[a===s.id?b:a].name).join(' ו');
+      notes.push({lvl:'warn', tag:'הוזז', text:`${s.name} הוזז ל-${fmt(cands[pick].t)} כדי לשמור שעתיים הפרדה מ${moved}.`});
+    }
+    placed[s.id] = {...cands[pick], s};
+  });
+  SEP.forEach(([a,b,min,why])=>{
+    if (placed[a] && placed[b] && gap(placed[a].t,placed[b].t) >= min)
+      notes.push({lvl:'ok', tag:'הפרדה', text:`${byId[a].name} ו${byId[b].name}: ${fmt(placed[a].t)} ו-${fmt(placed[b].t)}. ${why}.`});
+  });
+  if (['iron','calcium','zinc','magnesium'].some(id=>placed[id]))
+    notes.push({lvl:'info', tag:'תרופות', text:'ברזל, סידן, אבץ ומגנזיום יכולים להפריע לספיגה של חלק מהאנטיביוטיקות ושל תרופות לבלוטת התריס. מי שנוטל/ת תרופה קבועה צריך/ה לבדוק עם רוקח/ת.'});
+  return {placed, notes};
+}
+
+/* ---- dial ---- */
+const NS = 'http://www.w3.org/2000/svg';
+const C = 160, R = 118;
+const pt = (m, r) => { const a = (norm(m)/1440)*2*Math.PI; return [C + r*Math.sin(a), C - r*Math.cos(a)]; };
+function el(tag, attrs, text){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text!=null) e.textContent = text; return e; }
+function arc(m1, m2, r){
+  const [x1,y1] = pt(m1,r), [x2,y2] = pt(m2,r);
+  let span = (norm(m2)-norm(m1)+1440)%1440;
+  return `M${x1} ${y1} A${r} ${r} 0 ${span>720?1:0} 1 ${x2} ${y2}`;
+}
+function drawDial(d, slots){
+  const svg = $('#dial'); svg.innerHTML = '';
+  svg.appendChild(el('circle',{cx:C,cy:C,r:R,fill:'none',stroke:'var(--line)','stroke-width':14}));
+  svg.appendChild(el('path',{d:arc(d.sleep,d.wake,R),fill:'none',stroke:'var(--night)','stroke-width':14}));
+  for (let h=0; h<24; h++){
+    const [x1,y1] = pt(h*60, R-10), [x2,y2] = pt(h*60, R-(h%6?14:20));
+    svg.appendChild(el('line',{x1,y1,x2,y2,stroke:'var(--muted)','stroke-width':h%6?1:1.6,opacity:h%6?.5:.9}));
+  }
+  [0,6,12,18].forEach(h=>{ const [x,y] = pt(h*60, R-33); svg.appendChild(el('text',{x,y,'text-anchor':'middle','dominant-baseline':'central','font-family':'IBM Plex Mono, monospace','font-size':11,fill:'var(--muted)'}, String(h).padStart(2,'0'))); });
+  const anchors = [[d.bf,'בוקר'],[d.lunch,'צהריים'],[d.dinner,'ערב']];
+  if (d.workout!=null) anchors.push([d.workout,'אימון']);
+  anchors.forEach(([m,label])=>{
+    const [x,y] = pt(m, R); svg.appendChild(el('rect',{x:x-3.5,y:y-3.5,width:7,height:7,fill:'var(--pine)',transform:`rotate(45 ${x} ${y})`}));
+    const [lx,ly] = pt(m, R+25); svg.appendChild(el('text',{x:lx,y:ly,'text-anchor':'middle','dominant-baseline':'central','font-size':11,'font-weight':600,fill:'var(--pine)','font-family':'IBM Plex Sans Hebrew, sans-serif'}, label));
+  });
+  slots.forEach((sl,i)=>{
+    const [x,y] = pt(sl.t, R);
+    const done = sl.items.every(it=>taken.has(it.s.id));
+    svg.appendChild(el('circle',{cx:x,cy:y,r:11,fill:done?'var(--ok)':'var(--accent)',stroke:'var(--surface)','stroke-width':2}));
+    svg.appendChild(el('text',{x,y,'text-anchor':'middle','dominant-baseline':'central','font-size':11,'font-family':'IBM Plex Mono, monospace',fill:done?'var(--surface)':'var(--accent-ink)'}, i+1));
+  });
+  const total = slots.reduce((n,s)=>n+s.items.length,0);
+  const got = slots.reduce((n,s)=>n+s.items.filter(it=>taken.has(it.s.id)).length,0);
+  svg.appendChild(el('text',{x:C,y:C-14,'text-anchor':'middle','font-family':'Secular One, sans-serif','font-size':34,fill:'var(--ink)'}, `${got}/${total}`));
+  svg.appendChild(el('text',{x:C,y:C+12,'text-anchor':'middle','font-size':12,fill:'var(--muted)','font-family':'IBM Plex Sans Hebrew, sans-serif'}, 'תוספים נלקחו היום'));
+  const now = new Date(); let nm = now.getHours()*60+now.getMinutes(); if (nm < d.wake) nm += 1440;
+  const next = slots.find(s=>s.t>=nm && !s.items.every(it=>taken.has(it.s.id)));
+  if (next) svg.appendChild(el('text',{x:C,y:C+32,'text-anchor':'middle','font-size':12,fill:'var(--accent)','font-family':'IBM Plex Sans Hebrew, sans-serif','font-weight':600}, `הבא בתור: ${fmt(next.t)}`));
+}
+
+/* ---- render ---- */
+function render(){
+  const d = readDay();
+  const {placed, notes} = schedule(d);
+  const groups = {};
+  Object.values(placed).forEach(p=>{ const k = norm(p.t); (groups[k] = groups[k] || {t:p.t, items:[]}).items.push(p); });
+  const slots = Object.values(groups).sort((a,b)=>a.t-b.t);
+
+  const tl = $('#timeline'); tl.innerHTML = '';
+  if (!slots.length) tl.innerHTML = '<p class="empty">בחרו תוסף אחד או יותר ברשימה “התוספים שלי”, והלוח ייבנה כאן.</p>';
+  slots.forEach((sl,i)=>{
+    const done = sl.items.every(it=>taken.has(it.s.id));
+    const row = document.createElement('div'); row.className = 'slot';
+    row.innerHTML = `<span class="num ${done?'done':''}">${i+1}</span><span class="t mono">${fmt(sl.t)}</span><div class="doses"></div>`;
+    const box = row.querySelector('.doses');
+    sl.items.forEach(it=>{
+      const s = it.s, on = taken.has(s.id);
+      const dz = document.createElement('label'); dz.className = 'dose'+(on?' taken':''); dz.htmlFor = 'k-'+s.id;
+      dz.innerHTML = `<input type="checkbox" id="k-${s.id}" ${on?'checked':''}><span class="txt"><span class="ttl">${s.name}<span class="mono">${s.dose}</span></span><span class="why">${it.why}</span></span>`;
+      dz.querySelector('input').addEventListener('change', e=>{ e.target.checked ? taken.add(s.id) : taken.delete(s.id); store.set('tb-taken-'+todayKey,[...taken]); render(); });
+      box.appendChild(dz);
+    });
+    tl.appendChild(row);
+  });
+
+  const order = {crit:0,warn:1,ok:2,info:3};
+  $('#notes').innerHTML = notes.length ? notes.sort((a,b)=>order[a.lvl]-order[b.lvl]).map(n=>`<div class="note ${n.lvl}"><span class="pill">${n.tag}</span><span>${n.text}</span></div>`).join('') : '<p class="empty" style="padding:0">אין הפרדות או אזהרות לשילוב הזה.</p>';
+
+  drawDial(d, slots);
+  store.set('tb-supps', Object.fromEntries(SUPPS.map(s=>[s.id,{on:s.on,r:s.r}])));
+  store.set('tb-times', Object.fromEntries(TIME_IDS.map(id=>{ const e = document.getElementById(id); return [id, e.type==='checkbox'?e.checked:e.value]; })));
+}
+
+/* ---- need check (hand-set demo weights; real model trained in M3) ---- */
+const sig = z => 1/(1+Math.exp(-z));
+function needs(){
+  const age = +$('#n-age').value || 22, sex = $('#n-sex').value, diet = $('#n-diet').value, bmi = $('#n-bmi').value,
+        win = $('#n-season').value==='win', lowSun = $('#n-sun').value==='low', dsupp = $('#n-dsupp').checked, tired = $('#n-tired').checked;
+  const D  = sig(-1.4 + (win?.6:0) + (lowSun?.6:0) + (dsupp?-1.2:.4) + (bmi==='hi'?.7:bmi==='mid'?.3:0) + (age>65?.3:0));
+  const Fe = sig(-2.2 + (sex==='f' && age<51 ? 1.1 : 0) + (diet==='veg'?.6:diet==='vegan'?.8:0) + (tired?.5:0));
+  const B  = sig(-2.8 + (diet==='vegan'?2.2:diet==='veg'?.9:0) + (age>50?.8:0) + (tired?.3:0));
+  const card = (name, p, test) => {
+    const lvl = p>=.45 ? ['גבוה','var(--crit)'] : p>=.25 ? ['בינוני','var(--warn)'] : ['נמוך','var(--ok)'];
+    return `<div class="risk"><div class="row"><h3>${name}</h3><span class="lvl" style="background:${lvl[1]}">${lvl[0]}</span></div>
+      <div class="bar"><span style="width:${Math.round(p*100)}%;background:${lvl[1]}"></span></div>
+      <small>${p>=.25 ? 'כדאי לבקש בדיקת דם: '+test : 'אין סיבה מיוחדת לבדיקה עכשיו.'}</small></div>`;
+  };
+  $('#risks').innerHTML = card('ויטמין D', D, '25(OH)D') + card('ברזל', Fe, 'פריטין והמוגלובין') + card('ויטמין B12', B, 'B12 בסרום');
+}
+['n-age','n-sex','n-diet','n-bmi','n-season','n-sun','n-dsupp','n-tired'].forEach(id=>{ const e = document.getElementById(id); e.addEventListener('input', needs); e.addEventListener('change', needs); });
+
+render(); needs();
+})();
+</script>
+
+</body></html>
