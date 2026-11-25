@@ -10,11 +10,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Ran Refaelov: programmer, repo and Streamlit.
   - Polina Shifitsin: data and product (NHANES cleaning, Data Card, timing rules table).
   - Avital Magnetza: UX/UI.
-- **Milestones:** M1 (definition doc) is done. M2 (data + dashboard) is due 25/11/2026 at 14:00 (public GitHub repo; every member submits the repo link on MoodLearn). Session 5 (18/11) is a checkpoint: data already loaded in the repo. The 3-minute pitch from the running dashboard at the start of session 6 is the lowest priority for the team. M3 is the trained model. A formal ML spec and a weekly plan will be added after course sessions 6 and 8.
+- **Repo:** team repo in the course org: https://github.com/Ariel-Vibe-Algorithm/tosaf-bazman (moved from `refaeloveran/M1--nutrition`). Grading = what is on `main` at the deadline.
+- **Milestones:** M1 done. **M2 (25/11/2026 14:00) = `eda.ipynb`**, a Jupyter notebook that answers the four EDA questions (column types, quality, distributions esp. of y, correlation with y incl. leakage), with a conclusion under every chart, plus clean data, README (problem, y, source, fixes, team table, insight, baseline), updated CLAUDE.md and a commit from every member. Streamlit is no longer required for M2 (update of 24/11); `app.py` stays as a bonus. 3-minute pitch straight from the notebook. Next: 2/12 bootcamp 2 (first model), **M3 16/12** model in the app, 23/12 deploy, **Demo Day 6/1/2027**.
 - **Language:** the user writes in Hebrew, and `README.md` is in Hebrew. Reply in Hebrew unless asked otherwise. The team has no programming background, so explain in plain words.
 - **Source of truth:** `README.md` is the spec and also holds the M2 Data Card, "what we fixed and why", insights, baseline and team table. Read it before planning work.
 
 ## Repo layout
+
+- `eda.ipynb`: the M2 deliverable. Built to run top to bottom (Run All) from the repo root, Hebrew RTL markdown, English chart labels (matplotlib breaks Hebrew). Main y = `vitd_low`. Leakage findings: `vitd_low`/`vitd_status` derive from `vitd_nmol_l`, `iron_low` from ferritin (100% reproducible), `seqn` encodes the cycle (r = 0.20); no real feature has |r| > 0.9. 466 people answered "no supplement" yet have calcium/magnesium doses (likely antacids counted by NHANES, vitamin D never affected). Keep every conclusion consistent with the printed numbers.
 
 - `app.py`: Streamlit EDA dashboard (RTL Hebrew). The main insight sits on top, then a `st.segmented_control` switches between two views. Each view has its own sidebar filters.
   1. **Timing and dosing, all 40 supplements.** Reads `data/timing_rules.csv` and `data/supplement_research.csv`. Filters: category, confidence, source country. KPI = % of supplements that need separating from another one. Charts: time of day, separation map, facts per supplement by country, confidence by category. Also a per-supplement card and the research table with links.
@@ -26,7 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `scripts/build_supplement_tables.py`: → `data/supplement_intake_by_person.csv` (16 nutrients per person) and `data/supplement_prevalence.csv`.
 - `scripts/build_timing_rules.py`: the rules are written in Python dicts here and it writes `data/timing_rules.csv`. `scripts/make_xlsx.py` turns that CSV into `docs/timing_rules.xlsx` for human review. Edit rules in the script, then rebuild both.
 - `prototype/tosaf-bazman.html`: the M1 prototype (single-file Hebrew RTL HTML, vanilla JS). Published artifact: https://claude.ai/artifact/XW47W1rhrcCKfZRuuHZBdY. Republish to that same URL; a new publish creates a new link.
-- `requirements.txt`: pinned (`streamlit==1.67.0`, `altair==6.3.0`, `pandas==3.1.1`, `numpy==2.5.5`). Tested in a fresh venv (Python 3.13, and again with 3.15 in `.venv/`) on 18/11/2026.
+- `requirements.txt`: pinned (`streamlit==1.67.0`, `altair==6.3.0`, `pandas==3.1.1`, `numpy==2.5.5`, `matplotlib==3.11.2`, `ipykernel==7.4.0` for the notebook). Tested in a fresh venv (Python 3.13, and again with 3.15 in `.venv/`) on 18/11/2026.
 - `.gitignore` excludes `venv/`, `.venv/`, `.vs/`, `__pycache__/`. Never commit a virtual environment.
 
 ## What we learned from the data (M2)
